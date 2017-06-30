@@ -1,5 +1,6 @@
+import numpy as np
 from astropy.modeling import Parameter
-from image import ImageModel
+from models import ImageModel
 
 class PSF(ImageModel):
     """
@@ -38,25 +39,27 @@ class PSF(ImageModel):
 
 
 class SymmetricGaussian2D(PSF):
-    """Gausian 2D profile (normalized)"""
+    """Gausian 2D profile (normalized).  The shape is parameterized in terms
+    of FWHM rather than sigma for historical reasons."""
     amplitude = Parameter(name='amplitude',default=1.)
     x_0       = Parameter(name='x_0',default=0.)
     y_0       = Parameter(name='y_0',default=0.)
     fwhm      = Parameter(name='fhwm',default=1.)
     
     @staticmethod
-    def _evaluate(self, x, y, amplitude, x_0, y_0, fwhm):
+    def _evaluate(x, y, amplitude, x_0, y_0, fwhm):
         """The true 'evaluate' method without oversampling"""
         sigma = 0.5*fwhm / np.sqrt(2.*np.log(2))
         rr_gg = ((x - x_0)**2 + (y - y_0)**2) / sigma ** 2
         return amplitude / (2*np.pi*sigma**2) * np.exp(-0.5 * rr_gg )
     
-    def evaluate(self,x,y,amplitude,x_0,y_0,fwhm):
+    def evaluate(self, x, y, amplitude, x_0, y_0, fwhm):
         return self._oversample_model(x,y,None,amplitude,x_0,y_0,fwhm)
     
     
 class SymmetricMoffat2D(PSF):
-    """Moffat 2D profile (normalized)"""
+    """Moffat 2D profile (normalized).  The shape is parametrized in terms
+    of FWHM and alpha rather than alpha and gamma for historical reasons."""
     amplitude = Parameter(name='amplitude',default=1.)
     x_0       = Parameter(name='x_0',default=0.)
     y_0       = Parameter(name='y_0',default=0.)

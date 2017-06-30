@@ -22,7 +22,7 @@ class ImageModel(Fittable2DModel):
     def __init__(self, **kwargs):
         # the default over sampling factor
         self.sample_factor = 1        
-        super(SkyModel, self).__init__(**kwargs)    
+        super(ImageModel, self).__init__(**kwargs)    
 
         
     def _oversample_factor(self):
@@ -76,11 +76,10 @@ class ImageModel(Fittable2DModel):
             xs,ys = fx(ii,jj),fy(ii,jj)
 
         return xs,ys
-    
-    def _oversample_model(self,x,y,sample_factor,*args):
-        """Calculate the model after first oversampling it and then
-        rebinning it back to the original resolution."""
 
+
+    def _oversampled_model(self,x,y,sample_factor,*args):
+        """Evaluate and return the oversampled model"""
         if sample_factor is None :
             sample_factor = self._oversample_factor()
         
@@ -90,14 +89,32 @@ class ImageModel(Fittable2DModel):
         else :
             xs,ys = x,y
             
-        a = self._evaluate(xs,ys,*args)
-        ms = a
-                
+        m = self._evaluate(xs,ys,*args)
+
+        # the amplitude is normalized to the original sampling, and
+        # in order to conserve flux we need to scale with the square
+        # of the sampling factor
+        m /= sample_factor*sample_factor
+
+        return m
+
+    
+    def _oversample_model(self,x,y,sample_factor,*args):
+        """Calculate the model after first oversampling it and then
+        rebinning it back to the original resolution."""
+        if sample_factor is None :
+            sample_factor = self._oversample_factor()
+
+        a = self._oversampled_model(x,y,sample_factor,*args)
+
         # rebin model back to the original resolution
         shape = x.shape
         if sample_factor > 1:
             sh = shape[0],a.shape[0]//shape[0],shape[1],a.shape[1]//shape[1]
-            ms = a.reshape(sh).mean(-1).mean(1)
+            # ms = a.reshape(sh).mean(-1).mean(1)
+            ms = a.reshape(sh).sum(-1).sum(1)
+        else :
+            ms = a
 
         return ms
             
@@ -111,4 +128,4 @@ class ImageModel(Fittable2DModel):
     def evaluate(self, x, y, *args):
         """Returns the evaluated model in the format that can be compared directly
         to data at the coordinates (x,y)."""
-        return self._oversample_model(x,y,None,amplitude,x_0,y_0,fwhm,alpha)    
+        return self._oversample_model(x,y,None,*args)    
