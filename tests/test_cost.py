@@ -9,7 +9,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import jointfitting.cost as cost
+import jfit.cost as cost
 
 
 def _linear(x,k,m) :

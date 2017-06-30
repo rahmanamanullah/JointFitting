@@ -6,7 +6,7 @@ import numpy as np
 import unittest
 from astropy.modeling import models
 
-from imagemodels.models import ImageModel
+from jfit.models import ImageModel
 
 
 def xy_data(nx=5,ny=7):

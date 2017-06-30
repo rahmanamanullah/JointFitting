@@ -6,7 +6,7 @@ import numpy as np
 import unittest
 from astropy.modeling import models
 
-import jointfitting.fitting as fitting
+import jfit.fitting as fitting
 
 class TestFitting(unittest.TestCase):
 

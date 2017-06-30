@@ -6,7 +6,7 @@ import numpy as np
 import unittest
 from astropy.modeling import models
 
-from imagemodels.psf import SymmetricGaussian2D, SymmetricMoffat2D
+from jfit.psf import SymmetricGaussian2D, SymmetricMoffat2D
 import test_imagemodels as testimage
 
 class TestImageModels(unittest.TestCase):
