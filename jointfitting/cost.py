@@ -11,7 +11,7 @@ __all__ = ['JointCostFunctor']
 def _validate_shape(x,y,z=None,w=None):
     """
     Validate that all arrays have the same dimensions and lengths.
-    """
+    """    
     s = x.shape
     valid = True
     for m in [y,z,w]:
@@ -37,13 +37,28 @@ def _not_in_list(list1,list2):
     return list3
 
 
-def _determine_nsets(z):
-    """Determine the number of data sets based on the shape of a data array."""
+def _determine_nsets(x,z):
+    """Determine the number of data sets where 'x' and 'y' has the same meaning
+    as in the cost function and both should be passed, since the results depends
+    on wheter we are doing 1D or 2D fitting"""
+    xx = x.squeeze().shape
     nsets = 1
-    s = z.shape
-
-    if len(s) > 1:
-        nsets = s[0]
+    if z is None:
+        if len(xx) == 1:
+            nsets = 1
+        elif len(xx) == 2:
+            nsets = xx[0]
+        else :
+            raise ValueError('For 1D fitting the dimensions of the data '
+                             'arrays must be <= 2.')
+    else:
+        if len(xx) == 2:
+            nsets = 1
+        elif len(xx) == 3:
+            nsets = xx[0]
+        else:
+            raise ValueError('For 2D fitting the dimensions of the data '
+                             'arrays must be either 2 or 3.')
     return nsets
 
 
@@ -114,7 +129,7 @@ class JointCostFunctor(object):
                                  "try to pass it manually to the constructor.")
                     
         # determine the number of datasets
-        nsets = _determine_nsets(y)
+        nsets = _determine_nsets(y,z)
         self.nsets = nsets
                                 
         # if we are doing joint fitting, the last 'ncommon' parameters are

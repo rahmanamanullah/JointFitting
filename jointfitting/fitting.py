@@ -29,7 +29,7 @@ class JointMinuitFitter(object) :
             raise ValueError("All data and weight arrays must have the same shape!")
 
         # the number of data sets
-        nsets = _determine_nsets(x)        
+        nsets = _determine_nsets(x,z)        
         
         # extract a copy of the (first) model
         if isinstance(model,list) and nsets != len(model):
