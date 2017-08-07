@@ -2,6 +2,8 @@ import numpy as np
 from astropy.modeling import Parameter
 from models import ImageModel
 
+__all__ = ['SymmetricGaussian2D','SymmetricMoffat2D']
+
 class PSF(ImageModel):
     """
     Abstract PSF class.
