@@ -94,7 +94,13 @@ class ImageModel(Fittable2DModel):
         # the amplitude is normalized to the original sampling, and
         # in order to conserve flux we need to scale with the square
         # of the sampling factor
-        m /= sample_factor*sample_factor
+        shape = x.shape
+        if len(shape) == 1:
+            m /= sample_factor
+        elif len(shape) == 2:
+            m /= sample_factor*sample_factor
+        else:
+            raise ValueError("Dimensions of input arrays not supported!")
 
         return m
 
@@ -110,9 +116,15 @@ class ImageModel(Fittable2DModel):
         # rebin model back to the original resolution
         shape = x.shape
         if sample_factor > 1:
-            sh = shape[0],a.shape[0]//shape[0],shape[1],a.shape[1]//shape[1]
-            # ms = a.reshape(sh).mean(-1).mean(1)
-            ms = a.reshape(sh).sum(-1).sum(1)
+            if len(shape) == 1:
+                sh = shape[0],a.shape[0]//shape[0]
+                ms = a.reshape(sh).sum(-1)
+            elif len(shape) == 2:
+                sh = shape[0],a.shape[0]//shape[0],shape[1],a.shape[1]//shape[1]
+                # ms = a.reshape(sh).mean(-1).mean(1)
+                ms = a.reshape(sh).sum(-1).sum(1)
+            else :
+                raise ValueError("Dimension of input array not supported!")
         else :
             ms = a
 
