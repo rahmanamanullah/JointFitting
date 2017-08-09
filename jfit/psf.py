@@ -7,6 +7,8 @@ __all__ = ['SymmetricGaussian2D','SymmetricMoffat2D']
 class PSF(ImageModel):
     """
     Abstract PSF class.
+    
+    http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/PSFsAndSampling.pdf
     """
 
     def kernel(self,khpw):
