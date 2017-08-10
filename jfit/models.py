@@ -2,6 +2,9 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline
 from astropy.modeling import Fittable2DModel
+from astropy.modeling import Parameter
+
+__all__ = ['ImageModel','Sersic2D']
 
 class ImageModel(Fittable2DModel):
     """
@@ -140,4 +143,48 @@ class ImageModel(Fittable2DModel):
     def evaluate(self, x, y, *args):
         """Returns the evaluated model in the format that can be compared directly
         to data at the coordinates (x,y)."""
-        return self._oversample_model(x,y,None,*args)    
+        return self._oversample_model(x,y,None,*args)
+
+
+class Sersic2D(ImageModel):
+    '''Two dimensional Sersic surface brightness profile.  This is
+    identical to the astropy.modeling implementation but is taking
+    advantage of ImageModel.'''
+    
+    amplitude = Parameter(name='amplitude',default=1.)
+    r_eff = Parameter(name='r_eff',default=1,min=1.e-8)
+    n = Parameter(name='n',default=1,bounds=(0.5,10))
+    x_0 = Parameter(name='x_0',default=0.)
+    y_0 = Parameter(name='y_0',default=0.)
+    ellip = Parameter(name='ellip',default=0.,bounds=(0.,1-1.e-8))
+    theta = Parameter(name='theta',default=0.,bounds=(-np.pi,np.pi))
+    _gammaincinv = None
+
+#    def __init__(self, **kwargs):
+#        self.sample_factor = 1
+#        super(ImageModel, self).__init__(**kwargs)
+
+    @classmethod
+    def _evaluate(cls,x,y,amplitude,r_eff,n,x_0,y_0,ellip,theta):
+        """Two dimensional Sersic profile function.  
+        Stolen from astropy.modeling"""
+
+        if cls._gammaincinv is None:
+            try:
+                from scipy.special import gammaincinv
+                cls._gammaincinv = gammaincinv
+            except ValueError:
+                raise ImportError('Sersic2D model requires scipy > 0.11.')
+
+        bn = cls._gammaincinv(2. * n, 0.5)
+        a, b = r_eff, (1 - ellip) * r_eff
+        cos_theta, sin_theta = np.cos(theta), np.sin(theta)
+        x_maj = (x - x_0) * cos_theta + (y - y_0) * sin_theta
+        x_min = -(x - x_0) * sin_theta + (y - y_0) * cos_theta
+        z = np.sqrt((x_maj / a) ** 2 + (x_min / b) ** 2)
+
+        return amplitude * np.exp(-bn * (z ** (1 / n) - 1))
+
+    def evaluate(self,x,y,amplitude,r_eff,n,x_0,y_0,ellip,theta):
+        return self._oversample_model(x,y,None,amplitude,r_eff,n,x_0,y_0,ellip,theta)
+
