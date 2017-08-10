@@ -11,7 +11,7 @@ class PSF(ImageModel):
     http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/PSFsAndSampling.pdf
     """
 
-    def kernel(self,khpw):
+    def kernel(self,khpw,sample_factor=1):
         """
         Create a kernel of size (2*khpw+1,2*khpw+1) with the *shape* parameters 
         of the PSF. It is implicitly assumed that the evaluate method of the
@@ -21,20 +21,38 @@ class PSF(ImageModel):
 
         The kernel will be normalized and the center of the PSF profile will 
         land in the center of the central pixel.
+
+        If a sample_factor > 1 is specified an over sampled PSF will be 
+        returned with the given factor and the center of the PSF will be
+        located in 
+
+           ((khpw+0.5)*sample_factor - 0.5,(khpw+0.5)*sample_factor - 0.5)
+
+        and it will have dimensions of
+
+           (sample_factor*(2*khpw+1),sample_factor*(2*khpw+1))
+
         """
         nelem = 2*khpw+1
         y,x = np.mgrid[:nelem, :nelem]
-        d = self.evaluate(x,y,1.,khpw,khpw,*self.parameters[3:])
+
+        if sample_factor == 1:
+            d = self.evaluate(x,y,1.,khpw,khpw,*self.parameters[3:])
+        elif sample_factor > 1:
+            d  = self._oversampled_model(
+                x,y,sample_factor,1.,khpw,khpw,*self.parameters[3:])
+        else:
+            raise ValueError("sample_factor < 1")
 
         return d/d.sum()
 
 
-    def save_kernel(self,khpw,kfname):
+    def save_kernel(self,khpw,kfname,sample_factor=1):
         """
         Save PSF as a normalized kernel of size (2*khpw+1,2*khpw+1) to 
         the FITS file 'kfname'.
         """
-        d = self.kernel(khpw)
+        d = self.kernel(khpw,sample_factor)
         hdu = fits.PrimaryHDU(d)
         hdu.writeto(kfname,clobber=True)
         hdu.close()

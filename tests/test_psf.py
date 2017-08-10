@@ -45,5 +45,41 @@ class TestPSF(unittest.TestCase):
 		return self.assertAlmostEqual(np.sum(z1),np.sum(z2))
 
 
+	def test_oversampled_gauss_kernel_dimensions(self):
+		"""Make sure that the oversampled kernel has the correct 
+		dimensions for the given oversampling factor."""
+
+		sample_factor = 5
+		fwhm = 2
+		khpw = 2*fwhm
+		m = SymmetricGaussian2D(fwhm=fwhm)
+		d = m.kernel(khpw,sample_factor)
+
+		kx,ky = d.shape
+
+		return self.assertTrue(kx == sample_factor*(2*khpw+1) and ky == kx)
+
+
+	def test_oversampled_gauss_kernel_position(self):
+		"""Make sure that the center of the Gaussian is in the correct
+		position for the given oversampling factor."""
+
+		sample_factor = 5
+		fwhm = 2
+		khpw = 2*fwhm
+		m = SymmetricGaussian2D(fwhm=fwhm)
+		d = m.kernel(khpw,sample_factor)
+
+		# setup x and y grids
+		kx,ky = d.shape
+		y,x = np.mgrid[:kx, :ky]
+
+		# the center position is at the brightest pixel
+		mask = d == d.max()
+		x1,y1 = x[mask],y[mask]
+
+		return self.assertTrue(x1==y1 and x1==(khpw+0.5)*sample_factor - 0.5)
+
+
 if __name__ == '__main__' :
 	unittest.main()
