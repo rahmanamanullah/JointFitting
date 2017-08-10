@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline
-from astropy.modeling import Fittable2DModel
-from astropy.modeling import Parameter
+from astropy.modeling import Fittable2DModel, Parameter
+from astropy.convolution import convolve
 
 __all__ = ['ImageModel','Sersic2D']
 
@@ -25,20 +25,74 @@ class ImageModel(Fittable2DModel):
     def __init__(self, **kwargs):
         # the default over sampling factor
         super(ImageModel, self).__init__(**kwargs)
-        self.oversample_factor(1)
 
         # if a kernel is attached it will be used to convolve the calculated 
         # model before returning it, should always be a 2D numpy array.
-        self._k = None
+        self._kernel = None   # the kernel model, should be derived from PSF
+        self._k = None        # 2D numpy array generated from self._kernel
+
+        self.oversample_factor(1)
 
         
-    def oversample_factor(self,factor=None):
+    def oversample_factor(self,factor):
         """Set the oversampling factor.  If a kernel is attached, it will
         be re-generated each time this method is called to make sure it always
         matches the oversampling factor."""
-        if factor is not None:
-            self._sample_factor = factor
+        self._sample_factor = factor
+        self.set_kernel()
+
         return True
+
+
+    def set_kernel(self,kern=None,khpw=None):
+        """Set a diffusion kernel that will be used to convolve the
+        evaluated model before returning it.  
+
+          'kern' - should be an object instantiated from a subclass to 
+                   the PSF class
+          'khpw' - is the kernel patch half-width
+
+        The kernel size should be chosen depending on the kernel FWHM,
+        it will be automatically scaled internally to match the oversampling
+        factor of the model.
+
+        If the method is called without a model, the 2D kernel stored
+        internally will be re-generated using the current oversampling
+        factor"""
+
+        # set the kernel model
+        if kern is not None:
+            if khpw is None :
+                raise ValueError("Both the kernel model and the kernel size must "
+                    "be specified!")
+
+            self._kernel = kern
+            self._khpw = khpw
+
+        # generate the internal 2D-kernel
+        if self._kernel is not None:
+            factor = self._sample_factor
+            self._k = self._kernel.kernel(self._khpw,factor)
+
+        return True
+
+
+    def _convolve(self,z) :
+        """Convolve model with an attached kernel"""
+        if self._k is not None :
+            k = self._k + 0.
+        
+            # if we are evaluating the model along a line (e.g. radially)
+            # z could be one dimentionsional, then we want to convolve it
+            # with a 1D kernel
+            if z.ndim == 1 :
+                nx,ny = self._k.shape
+                k = self._k[:,(ny-1)/2] + 0. # assuming it is a radially symmetric kernel
+
+            k /= k.sum()
+            return convolve(z, k)
+        else :
+            return z
 
     
     def _oversample_input(self,x,y,sample_factor):
@@ -98,7 +152,7 @@ class ImageModel(Fittable2DModel):
             xs,ys = self._oversample_input(x,y,sample_factor)
         else :
             xs,ys = x,y
-            
+        
         m = self._evaluate(xs,ys,*args)
 
         # the amplitude is normalized to the original sampling, and
@@ -111,6 +165,9 @@ class ImageModel(Fittable2DModel):
             m /= sample_factor*sample_factor
         else:
             raise ValueError("Dimensions of input arrays not supported!")
+
+        # convolve with the attached kernel
+        m = self._convolve(m)
 
         return m
 

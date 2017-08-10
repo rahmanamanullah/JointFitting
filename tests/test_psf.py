@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import numpy as np
 import unittest
-from astropy.modeling import models
+from astropy.modeling import models, fitting
 
 from jfit.psf import SymmetricGaussian2D, SymmetricMoffat2D
 import test_imagemodels as testimage
@@ -79,6 +79,66 @@ class TestPSF(unittest.TestCase):
 		x1,y1 = x[mask],y[mask]
 
 		return self.assertTrue(x1==y1 and x1==(khpw+0.5)*sample_factor - 0.5)
+
+
+class TestKernel(unittest.TestCase):
+	def test_kernel_assignment(self):
+		"""Test that an assigned kernel is automatically generated and
+		has the correct dimensions"""
+
+		factor = 3 # oversampling factor
+		fwhmi = 4  # fwhm of image Gaussian
+		fwhmk = 3  # fwhm of kernel Gaussian
+		khpw = 2*fwhmk
+
+		m = SymmetricGaussian2D(fwhm=fwhmi)
+		m.oversample_factor(factor)
+
+		k = SymmetricGaussian2D(fwhm=fwhmk)
+		m.set_kernel(k,khpw)
+
+		kx,ky = m._k.shape
+
+		return self.assertTrue(kx == factor*(2*khpw+1) and kx == ky)
+
+
+	def test_gaussian_convolution_of_gaussian_image(self):
+		"""Convolve a Gaussian image with a Gaussian kernel, and measure
+		the sigma of the final image"""
+
+		# image
+		s = (31,61)
+		fwhmi = 7
+		factor = 5
+		i = SymmetricGaussian2D(x_0=(s[1]-1)/2,y_0=(s[0]-1)/2,fwhm=fwhmi)
+		i.oversample_factor(factor)
+
+		# assign Gaussian kernel
+		fwhmk = 5
+		khpw = 2*fwhmk        # kernel half-width
+		k = SymmetricGaussian2D(fwhm=fwhmk)
+		i.set_kernel(k,khpw)
+
+		# evaluate model
+		x,y = testimage.xy_data(s[0],s[1])
+		m = i(x,y)
+
+		# fit Gaussian2D to the convolved model
+		g_init = models.Gaussian2D(amplitude=m.max(), 
+			x_mean=(s[1]-1)/2, y_mean=(s[0]-1)/2,
+			x_stddev=fwhmi, y_stddev=fwhmi)
+		fit_g = fitting.LevMarLSQFitter()
+		g = fit_g(g_init, x, y, m)
+
+		# calculate the the theoretical standard deviation for convolution 
+		# of two Gaussians in 1D.
+		stddevi,stddevk = fwhmi/2.35,fwhmk/2.35
+		stddevt = np.sqrt(stddevi**2 + stddevk**2)
+
+		# make sure that it is within 10%
+		rel_dev = (g.x_stddev.value - stddevt)/stddevt
+		
+		return self.assertTrue(np.abs(rel_dev) < 0.1)
 
 
 if __name__ == '__main__' :
