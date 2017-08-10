@@ -104,7 +104,11 @@ class TestKernel(unittest.TestCase):
 
 	def test_gaussian_convolution_of_gaussian_image(self):
 		"""Convolve a Gaussian image with a Gaussian kernel, and measure
-		the sigma of the final image"""
+		the sigma of the final image.  A Guassian convolved with a Gaussian
+		is a Gaussian with a variance that is the sum of the two:
+
+		http://www.tina-vision.net/docs/memos/2003-003.pdf
+		"""
 
 		# image
 		s = (31,61)
@@ -137,7 +141,7 @@ class TestKernel(unittest.TestCase):
 
 		# make sure that it is within 10%
 		rel_dev = (g.x_stddev.value - stddevt)/stddevt
-		
+
 		return self.assertTrue(np.abs(rel_dev) < 0.1)
 
 
