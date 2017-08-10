@@ -27,11 +27,15 @@ class ImageModel(Fittable2DModel):
         super(ImageModel, self).__init__(**kwargs)
         self.oversample_factor(1)
 
+        # if a kernel is attached it will be used to convolve the calculated 
+        # model before returning it, should always be a 2D numpy array.
+        self._k = None
+
         
     def oversample_factor(self,factor=None):
-        """Set the oversampling factor or override to calculate it automatically.
-        If a kernel is attached, make sure it is regenerated to match the
-        new sampling factor."""
+        """Set the oversampling factor.  If a kernel is attached, it will
+        be re-generated each time this method is called to make sure it always
+        matches the oversampling factor."""
         if factor is not None:
             self._sample_factor = factor
         return True
