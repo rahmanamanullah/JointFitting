@@ -142,7 +142,7 @@ class ImageModel(Fittable2DModel):
         return xs,ys
 
 
-    def _oversampled_model(self,x,y,sample_factor,*args):
+    def _only_oversampled_model(self,x,y,sample_factor,*args):
         """Evaluate and return the oversampled model"""
         if sample_factor is None :
             sample_factor = self._sample_factor
@@ -166,7 +166,12 @@ class ImageModel(Fittable2DModel):
         else:
             raise ValueError("Dimensions of input arrays not supported!")
 
-        # convolve with the attached kernel
+        return m
+
+
+    def _oversampled_model(self,x,y,sample_factor,*args):
+        """Evaluate and return the oversampled convolved model"""
+        m = self._only_oversampled_model(x,y,sample_factor,*args)
         m = self._convolve(m)
 
         return m
