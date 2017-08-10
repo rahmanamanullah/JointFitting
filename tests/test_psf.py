@@ -9,7 +9,7 @@ from astropy.modeling import models
 from jfit.psf import SymmetricGaussian2D, SymmetricMoffat2D
 import test_imagemodels as testimage
 
-class TestImageModels(unittest.TestCase):
+class TestPSF(unittest.TestCase):
 	def test_oversampling_gauss_flux_conservation(self):
 		"""Make sure that the flux is conserved after the oversampled model has been 
 		rebinned to the original size"""

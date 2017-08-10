@@ -25,7 +25,6 @@ class TestCost(unittest.TestCase):
 		y = np.random.rand(nx)
 		return self.assertTrue(cost._validate_shape(x,y))
 
-
 	def test_validate_shape_of_identical_arrays2D(self):
 		nx,ny = 3,3
 		x = np.random.rand(nx,ny)
@@ -33,7 +32,6 @@ class TestCost(unittest.TestCase):
 		z = None
 		w = None
 		return self.assertTrue(cost._validate_shape(x,y,z,w))
-
 
 	def test_validate_shape_of_identical_arrays3D(self):
 		nx,ny,nz = 5,5,3
@@ -43,13 +41,11 @@ class TestCost(unittest.TestCase):
 		w = np.random.rand(nx,ny,nz)
 		return self.assertTrue(cost._validate_shape(x,y,z,w))
 
-
 	def test_validate_shape_of_non_identical_arrays_1D(self):
 		nx,ny = 3,5
 		x = np.random.rand(nx)
 		y = np.random.rand(ny)
 		return self.assertFalse(cost._validate_shape(x,y))
-
 
 	def test_not_in_list(self):
 		a = ['a','b','c','d','e']
@@ -57,7 +53,6 @@ class TestCost(unittest.TestCase):
 		c2 = ['b','d']
 		c1 = cost._not_in_list(a,b)
 		return self.assertTrue(c1==c2)
-
 
 	def test_determine_nsets1D_simple(self):
 		a = np.array([[2,3],[4,5]])
@@ -89,11 +84,10 @@ class TestCost(unittest.TestCase):
 		nb = cost._determine_nsets(b,b)
 		return self.assertEqual(nb,1)
 
-	def test_determine_nsets2D_with_extra_dimension1(self):
+	def test_determine_nsets2D_with_extra_dimension2(self):
 		b = np.array([[[2,3],[4,5]],[[6,7],[8,9]]])	
 		nb = cost._determine_nsets(b,b)
 		return self.assertEqual(nb,2)
-
 
 	def test_all_param_names_simple(self):
 		nsets = 2
