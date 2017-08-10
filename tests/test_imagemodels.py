@@ -6,7 +6,7 @@ import numpy as np
 import unittest
 from astropy.modeling import models
 
-from jfit.models import ImageModel
+from jfit.models import ImageModel, Sersic2D
 
 
 def xy_data(nx=5,ny=7):
@@ -72,6 +72,23 @@ class TestImageModels(unittest.TestCase):
 		m = ImageModel()
 		z = m.evaluate(x,y)
 		return self.assertTrue(z.shape == s)
+
+
+	def test_sersic2d_instantiate(self):
+		"""Test that the Sersic2D instantiates correctly and that the
+		profile end up where we expect"""
+		# setup grid
+		hpw = 10
+		s = (2*hpw+1,4*hpw+1)
+		y, x = xy_data(s[0],s[1])
+
+		m = Sersic2D(x_0=hpw,y_0=hpw,n=2,r_eff=0.5*hpw)
+		f = m(x,y)
+
+		# brightest pixel should be equal to hpw
+		mask = f == f.max()
+
+		return self.assertTrue(x[mask]==hpw and y[mask]==hpw)
 
 
 if __name__ == '__main__' :
