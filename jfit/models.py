@@ -24,14 +24,17 @@ class ImageModel(Fittable2DModel):
 
     def __init__(self, **kwargs):
         # the default over sampling factor
-        self.sample_factor = 1        
-        super(ImageModel, self).__init__(**kwargs)    
+        super(ImageModel, self).__init__(**kwargs)
+        self.oversample_factor(1)
 
         
-    def _oversample_factor(self):
-        """Can be overwridden to calculate the oversampling factor based
-        on shape parameters"""
-        return self.sample_factor
+    def oversample_factor(self,factor=None):
+        """Set the oversampling factor or override to calculate it automatically.
+        If a kernel is attached, make sure it is regenerated to match the
+        new sampling factor."""
+        if factor is not None:
+            self._sample_factor = factor
+        return True
 
     
     def _oversample_input(self,x,y,sample_factor):
@@ -84,7 +87,7 @@ class ImageModel(Fittable2DModel):
     def _oversampled_model(self,x,y,sample_factor,*args):
         """Evaluate and return the oversampled model"""
         if sample_factor is None :
-            sample_factor = self._oversample_factor()
+            sample_factor = self._sample_factor
         
         # over sample the input vectors
         if sample_factor > 1:
@@ -112,7 +115,7 @@ class ImageModel(Fittable2DModel):
         """Calculate the model after first oversampling it and then
         rebinning it back to the original resolution."""
         if sample_factor is None :
-            sample_factor = self._oversample_factor()
+            sample_factor = self._sample_factor
 
         a = self._oversampled_model(x,y,sample_factor,*args)
 
@@ -148,14 +151,18 @@ class ImageModel(Fittable2DModel):
 
 class Sersic2D(ImageModel):
     '''Two dimensional Sersic surface brightness profile.  This is
-    identical to the astropy.modeling implementation but is taking
-    advantage of ImageModel.'''
+    similar to the astropy.modeling implementation but is taking
+    advantage of ImageModel.
+
+    Note the different argument order to the evaluate() and 
+    __call__() methods compared to the the astropy.modeling 
+    implementation.'''
     
     amplitude = Parameter(name='amplitude',default=1.)
-    r_eff = Parameter(name='r_eff',default=1,min=1.e-8)
-    n = Parameter(name='n',default=1,bounds=(0.5,10))
     x_0 = Parameter(name='x_0',default=0.)
     y_0 = Parameter(name='y_0',default=0.)
+    r_eff = Parameter(name='r_eff',default=1,min=1.e-8)
+    n = Parameter(name='n',default=1,bounds=(0.5,10))
     ellip = Parameter(name='ellip',default=0.,bounds=(0.,1-1.e-8))
     theta = Parameter(name='theta',default=0.,bounds=(-np.pi,np.pi))
     _gammaincinv = None
@@ -165,7 +172,7 @@ class Sersic2D(ImageModel):
 #        super(ImageModel, self).__init__(**kwargs)
 
     @classmethod
-    def _evaluate(cls,x,y,amplitude,r_eff,n,x_0,y_0,ellip,theta):
+    def _evaluate(cls,x,y,amplitude,x_0,y_0,r_eff,n,ellip,theta):
         """Two dimensional Sersic profile function.  
         Stolen from astropy.modeling"""
 
@@ -185,6 +192,6 @@ class Sersic2D(ImageModel):
 
         return amplitude * np.exp(-bn * (z ** (1 / n) - 1))
 
-    def evaluate(self,x,y,amplitude,r_eff,n,x_0,y_0,ellip,theta):
-        return self._oversample_model(x,y,None,amplitude,r_eff,n,x_0,y_0,ellip,theta)
+    def evaluate(self,x,y,amplitude,x_0,y_0,r_eff,n,ellip,theta):
+        return self._oversample_model(x,y,None,amplitude,x_0,y_0,r_eff,n,ellip,theta)
 

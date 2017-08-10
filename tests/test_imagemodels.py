@@ -77,6 +77,7 @@ class TestImageModels(unittest.TestCase):
 	def test_sersic2d_instantiate(self):
 		"""Test that the Sersic2D instantiates correctly and that the
 		profile end up where we expect"""
+
 		# setup grid
 		hpw = 10
 		s = (2*hpw+1,4*hpw+1)

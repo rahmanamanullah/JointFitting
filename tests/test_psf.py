@@ -20,7 +20,7 @@ class TestPSF(unittest.TestCase):
 		factor = 5
 		x,y = testimage.xy_data(s[0],s[1])
 		m = SymmetricGaussian2D()
-		m.sample_factor = factor
+		m.oversample_factor(factor)
 		z1 = m._oversampled_model(x,y,factor,amplitude,x0,y0,fwhm)
 		z2 = m.evaluate(x,y,amplitude,x0,y0,fwhm)
 
@@ -38,7 +38,7 @@ class TestPSF(unittest.TestCase):
 		factor = 5
 		x,y = testimage.xy_data(s[0],s[1])
 		m = SymmetricMoffat2D()
-		m.sample_factor = factor
+		m.oversample_factor(factor)
 		z1 = m._oversampled_model(x,y,factor,amplitude,x0,y0,fwhm,alpha)
 		z2 = m.evaluate(x,y,amplitude,x0,y0,fwhm,alpha)
 
