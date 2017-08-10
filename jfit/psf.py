@@ -75,8 +75,6 @@ class SymmetricGaussian2D(PSF):
         rr_gg = ((x - x_0)**2 + (y - y_0)**2) / sigma ** 2
         return amplitude / (2*np.pi*sigma**2) * np.exp(-0.5 * rr_gg )
     
-    def evaluate(self, x, y, amplitude, x_0, y_0, fwhm):
-        return self._oversample_model(x,y,None,amplitude,x_0,y_0,fwhm)
     
     
 class SymmetricMoffat2D(PSF):
@@ -108,6 +106,3 @@ class SymmetricMoffat2D(PSF):
         gamma = 0.5 * fwhm/np.sqrt(2**(1./alpha) - 1.)
         rr_gg = ((x - x_0) ** 2 + (y - y_0) ** 2) / gamma ** 2    
         return amplitude * (alpha - 1.)/(np.pi*gamma*gamma) * (1 + rr_gg)**(-alpha)
-
-    def evaluate(self,x,y,amplitude,x_0,y_0,fwhm,alpha):
-        return self._oversample_model(x,y,None,amplitude,x_0,y_0,fwhm,alpha)

@@ -258,6 +258,3 @@ class Sersic2D(ImageModel):
 
         return amplitude * np.exp(-bn * (z ** (1 / n) - 1))
 
-    def evaluate(self,x,y,amplitude,x_0,y_0,r_eff,n,ellip,theta):
-        return self._oversample_model(x,y,None,amplitude,x_0,y_0,r_eff,n,ellip,theta)
-
