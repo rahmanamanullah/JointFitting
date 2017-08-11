@@ -1,8 +1,8 @@
 from fitting import JointMinuitFitter
-from models import ImageModel
+from models import *
 from psf import SymmetricMoffat2D,SymmetricGaussian2D
 __all__ = [
   'JointMinuitFitter',
-  'ImageModel',
+  'ImageModel','Sersic2D',
   'SymmetricMoffat2D','SymmetricGaussian2D'
 ]
