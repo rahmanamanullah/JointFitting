@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline
 from astropy.modeling import Fittable2DModel, Parameter
-from astropy.convolution import convolve
+from astropy.convolution import convolve, convolve_fft
 
 __all__ = ['ImageModel','Sersic2D']
 
@@ -17,9 +17,6 @@ class ImageModel(Fittable2DModel):
     
     The class supports over sampling when calculating the model, which is
     very useful for images with undersampled PSF.
-    
-    TODO: implement the possibility of instantiating the model with a PSF
-          that will be used to convolve the (oversampled) model.
     """
 
     def __init__(self, **kwargs):
@@ -33,7 +30,21 @@ class ImageModel(Fittable2DModel):
 
         self.oversample_factor(1)
 
-        
+
+    def get(self,parameter) :
+        """Get the given model parameter to the value.  This can also be done
+        as model.parameter, but this method is useful for looping over many 
+        parameters."""
+        return self.parameters[self.param_names.index(parameter)]
+                                    
+                                        
+    def set(self,parameter,value) :
+        """Set the given model parameter to the value.  This can also be done
+        as model.parameter = value, but this method is useful for looping
+        over many parameters."""
+        self.parameters[self.param_names.index(parameter)] = value
+
+                                                                                    
     def oversample_factor(self,factor):
         """Set the oversampling factor.  If a kernel is attached, it will
         be re-generated each time this method is called to make sure it always
@@ -73,12 +84,14 @@ class ImageModel(Fittable2DModel):
         if self._kernel is not None:
             factor = self._sample_factor
             self._k = self._kernel.kernel(self._khpw,factor)
+            print self._k.shape
 
         return True
 
 
     def _convolve(self,z) :
-        """Convolve model with an attached kernel"""
+        """Convolve model with an attached kernel. FFT convolution will be
+        used for kernel sizes exceeding 3x3."""
         if self._k is not None :
             k = self._k + 0.
         
@@ -90,7 +103,10 @@ class ImageModel(Fittable2DModel):
                 k = self._k[:,(ny-1)/2] + 0. # assuming it is a radially symmetric kernel
 
             k /= k.sum()
-            return convolve(z, k)
+            if len(k) > 9:
+                return convolve_fft(z, k, normalize_kernel=True)
+            else :
+                return convolve(z, k, normalize_kernel=True)
         else :
             return z
 
