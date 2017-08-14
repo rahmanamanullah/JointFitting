@@ -7,6 +7,7 @@ import unittest
 from astropy.modeling import models
 
 import jfit.fitting as fitting
+import test_imagemodels as testimage
 
 class TestFitting(unittest.TestCase):
 
@@ -83,6 +84,8 @@ class TestFitting(unittest.TestCase):
 		self.assertEqual(fl1.slope.value,fl2.slope.value)
 
 	def test_gaussian2Dfit_to_two_datasets_with_common_sigma(self):
+		"""Joint 2D fitting with common and individual image dependent
+		parameters"""
 		nx,ny = 128,128
 		common_names = ['x_stddev','y_stddev','theta']		
 
@@ -114,6 +117,7 @@ class TestFitting(unittest.TestCase):
 		self.assertAlmostEqual(fl1.y_mean.value,y1)
 		self.assertEqual(fl0.x_stddev.value,fl1.x_stddev.value)
 		self.assertEqual(fl0.y_stddev.value,fl1.y_stddev.value)
+
 
 	
 if __name__ == '__main__' :

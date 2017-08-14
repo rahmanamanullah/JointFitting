@@ -9,6 +9,37 @@ from astropy.modeling import models, fitting
 from jfit.psf import SymmetricGaussian2D, SymmetricMoffat2D
 import test_imagemodels as testimage
 
+
+def guassian_convolved_with_gaussian(nx,ny,amplitude=1.0,x0=None,y0=None,fwhmi=7,fwhmk=5,factor=5):
+	"""Return an image of size (nx,ny) with a Gaussian PSF centered at (x0,y0) with 
+	FWHMI=fwhmi, convolved with a Gaussian kernel with FWHMI=fwhmk.  If (x0,y0) are not
+	given the Gaussian will be placed at the center of the image.
+
+	The oversampling factor can also be specified."""
+
+	# image
+	s = (nx,ny)
+	if x0 is None :
+		x0 = (s[1]-1)/2
+	if y0 is None :
+		y0 = (s[0]-1)/2
+	i = SymmetricGaussian2D(amplitude=amplitude,x_0=x0,y_0=y0,fwhm=fwhmi)
+	i.oversample_factor(factor)
+
+	# assign Gaussian kernel
+	khpw = 2*fwhmk        # kernel half-width
+
+	# large amplitude (should not matter) to test the flux conservation of the convlution
+	k = SymmetricGaussian2D(amplitude=100.,fwhm=fwhmk)  
+	i.set_kernel(k,khpw)
+
+	# evaluate model
+	x,y = testimage.xy_data(s[0],s[1])
+	m = i(x,y)
+
+	return m
+
+
 class TestPSF(unittest.TestCase):
 	def test_oversampling_gauss_flux_conservation(self):
 		"""Make sure that the flux is conserved after the oversampled model has been 
@@ -102,37 +133,55 @@ class TestKernel(unittest.TestCase):
 		return self.assertTrue(kx == factor*(2*khpw+1) and kx == ky)
 
 
-	def test_gaussian_convolution_of_gaussian_image(self):
+	def test_flux_conservation_after_convolution(self):
+		"""Convolution should always conserve flux even if the kernel has a
+		non-unit integral"""
+
+		# large image to include the wings
+		nx,ny = 101,101
+		x,y = testimage.xy_data(nx,ny)
+		x0,y0 = (nx-1)/2,(ny-1)/2
+		flux = 1.0
+		fwhmi = 7
+		factor = 5.
+
+		# first model without convolution
+		g = SymmetricGaussian2D(amplitude=flux,x_0=x0,y_0=y0,fwhm=fwhmi)
+		g.oversample_factor(factor)
+		i1 = g(x,y)
+
+		# second image with convolution
+		fwhmk = 10
+		i2 = guassian_convolved_with_gaussian(nx,ny,amplitude=flux,x0=x0,y0=y0,
+			fwhmi=fwhmi,fwhmk=fwhmk,factor=factor)
+
+		return self.assertAlmostEqual(i1.sum(),i2.sum())
+
+
+	def test_gaussian_fwhm_after_convolution(self):
 		"""Convolve a Gaussian image with a Gaussian kernel, and measure
-		the sigma of the final image.  A Guassian convolved with a Gaussian
+		the sigma of the final image.  A Gaussian convolved with a Gaussian
 		is a Gaussian with a variance that is the sum of the two:
 
 		http://www.tina-vision.net/docs/memos/2003-003.pdf
 		"""
-
-		# image
-		s = (31,61)
+		nx,ny = 31,61
 		fwhmi = 7
-		factor = 5
-		i = SymmetricGaussian2D(x_0=(s[1]-1)/2,y_0=(s[0]-1)/2,fwhm=fwhmi)
-		i.oversample_factor(factor)
-
-		# assign Gaussian kernel
 		fwhmk = 5
-		khpw = 2*fwhmk        # kernel half-width
-		k = SymmetricGaussian2D(fwhm=fwhmk)
-		i.set_kernel(k,khpw)
+		factor = 5
+		x,y = testimage.xy_data(nx,ny)
+		m = guassian_convolved_with_gaussian(nx,ny,amplitude=1.0,x0=None,y0=None,
+			fwhmi=fwhmi,fwhmk=fwhmk,factor=factor)
 
-		# evaluate model
-		x,y = testimage.xy_data(s[0],s[1])
-		m = i(x,y)
+		x,y = testimage.xy_data(nx,ny)
 
 		# fit Gaussian2D to the convolved model
 		g_init = models.Gaussian2D(amplitude=m.max(), 
-			x_mean=(s[1]-1)/2, y_mean=(s[0]-1)/2,
+			x_mean=(ny-1)/2, y_mean=(nx-1)/2,
 			x_stddev=fwhmi, y_stddev=fwhmi)
 		fit_g = fitting.LevMarLSQFitter()
 		g = fit_g(g_init, x, y, m)
+
 
 		# calculate the the theoretical standard deviation for convolution 
 		# of two Gaussians in 1D.

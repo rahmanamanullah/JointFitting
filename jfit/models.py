@@ -84,7 +84,6 @@ class ImageModel(Fittable2DModel):
         if self._kernel is not None:
             factor = self._sample_factor
             self._k = self._kernel.kernel(self._khpw,factor)
-            print self._k.shape
 
         return True
 
