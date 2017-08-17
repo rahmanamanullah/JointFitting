@@ -100,7 +100,7 @@ class ImageModel(Fittable2DModel):
             if z.ndim == 1 :
                 nx,ny = self._k.shape
                 k = self._k[:,(ny-1)/2] + 0. # assuming it is a radially symmetric kernel
-
+            
             k /= k.sum()
             if len(k) > 9:
                 return convolve_fft(z, k, normalize_kernel=True)
@@ -242,7 +242,7 @@ class Sersic2D(ImageModel):
     amplitude = Parameter(name='amplitude',default=1.)
     x_0 = Parameter(name='x_0',default=0.)
     y_0 = Parameter(name='y_0',default=0.)
-    r_eff = Parameter(name='r_eff',default=1,min=1.e-8)
+    r_eff = Parameter(name='r_eff',default=1)
     n = Parameter(name='n',default=1,bounds=(0.5,10))
     ellip = Parameter(name='ellip',default=0.,bounds=(0.,1-1.e-8))
     theta = Parameter(name='theta',default=0.,bounds=(-np.pi,np.pi))

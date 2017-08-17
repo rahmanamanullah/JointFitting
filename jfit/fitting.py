@@ -101,7 +101,7 @@ class JointMinuitFitter(object) :
 
         d, l = m.migrad(ncall=maxiter)
         if m.ncalls == maxiter :
-            raise Warning('Maximum number of calls reached for migrad!')        
+            raise Warning('Maximum number of calls reached for migrad!')
         self.minuit = m
 
         # set all model parameters to the fitted values
