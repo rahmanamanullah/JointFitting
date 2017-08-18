@@ -16,6 +16,7 @@ class JointMinuitFitter(object) :
         self.verbose = verbose
         self.minuit = None
         self.m = self.minuit
+
         
         
     def __call__(self, model, x, y, z=None, weights=None, common_names=[], maxiter=DEFAULT_MAXITER):
@@ -31,14 +32,14 @@ class JointMinuitFitter(object) :
         # the number of data sets
         nsets = _determine_nsets(x,z)        
         
-        # extract a copy of the (first) model
+        # check input arguments
         if isinstance(model,list) and nsets != len(model):
             raise ValueError("The number of models in the list must match the length "
                              "of the first dimension of the data arrays.")
         elif not isinstance(model,list) and nsets != 1:
             raise ValueError("If single model is passed, the dimensions of the data "
                              "arrays must be either 1 or 2.")
-        
+
         # Set up keyword arguments to pass to Minuit initializer.
         kwargs = {}
         modelc = []
@@ -60,13 +61,13 @@ class JointMinuitFitter(object) :
                     pname = name
                 kwargs[pname] = model_copy.parameters[model_copy.param_names.index(name)]  # Starting point.
 
+                vparam_names.append(pname)
+
                 # Fix parameters not being varied in the fit.
                 if fixed[name] :
                     kwargs['fix_' + pname] = True
                     kwargs['error_' + pname] = 0.
                     continue
-
-                vparam_names.append(pname)
                 
                 # Bounds and initial step size
                 if kwargs[pname] != 0. :
@@ -92,9 +93,12 @@ class JointMinuitFitter(object) :
                     print('bounds=', kwargs['limit_' + name], end=" ")
                 print() 
 
-        # setup the cost function
+        # setup the cost function, the parameter names passed here are the parameter
+        # names for the invividual models.
         costfnc = JointCostFunctor(model_copy.evaluate,x,y,z,weights,
-                                   common_names=common_names,param_names=model_copy.param_names)                   
+                                   common_names=common_names,
+                                   param_names=model_copy.param_names)
+
         m = iminuit.Minuit(costfnc, errordef=1.,
                            print_level=(1 if self.verbose else 0),
                            throw_nan=True, **kwargs)

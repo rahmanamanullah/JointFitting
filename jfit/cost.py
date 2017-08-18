@@ -1,5 +1,6 @@
 from __future__ import print_function
 import numpy as np
+import operator
 
 # these iminuit modules are only used for dynamically 
 # finding the function signature
@@ -63,8 +64,9 @@ def _determine_nsets(x,z):
 
 
 def _all_param_names(nsets,param_names,common_names):
-    """Return a list with all the parameter names, given the number of data sets and
-    a list of common parameters.    
+    """Return a list with all the parameter names (e.g. [a_0,c_0,a_1,c_1,b], given the 
+    number of data sets, the parameter names for the model (e.g. [a,b,c]) and a list
+    of common parameter names (e.g. [b]).    
     """
     indiv_names = _not_in_list(param_names,common_names)
     ncommon = len(common_names)
@@ -100,7 +102,7 @@ class JointCostFunctor(object):
         be assumed to run over the different data sets.  
         
         In the default execution all parameters of the model 'f' will be fit to each data 
-        set indpedently.  In other words, this is identical to fit the model to each data
+        set indepedently.  In other words, this is identical to fit the model to each data
         set, one at a time.
         
         However, if some parameters are passed as 'common_names' these will be jointly fit
@@ -131,10 +133,8 @@ class JointCostFunctor(object):
         # determine the number of datasets
         nsets = _determine_nsets(y,z)
         self.nsets = nsets
-                                
-        # if we are doing joint fitting, the last 'ncommon' parameters are
-        # the same for each data set, while the first nparam-ncommon are fitted
-        # individually to each set
+
+        # keep track of the parameters that are going to be jointly fitted
         ncommon = len(common_names)
         nparam  = len(param_names)
         
@@ -159,8 +159,8 @@ class JointCostFunctor(object):
                 self.index.append(i1)
                 i1 += 1
         
-        # setup the full parameter list that should be fitted, this will have the
-        # length: nsets*(nparam-ncommon) + ncommon
+        # setup the full parameter list that *should be fitted* (i.e. no
+        # fixed parameters), this will have the length: nsets*(nparam-ncommon) + ncommon
         param_names_full = _all_param_names(nsets,param_names,common_names)
          
         # setup the function signature
@@ -203,8 +203,8 @@ class JointCostFunctor(object):
                 # now the tuple must be reshuffled to match the call order
                 # for the model that we are trying to fit.
                 targ = list(targ)
-                targ.sort(key=dict(zip(targ,self.index)).get)
-                targ = tuple(targ)
+                targ = sorted(dict(zip(self.index,targ)).items(), key=lambda x: x[0])
+                targ = tuple([value for (key,value) in targ])
                 
                 x,y = self.x[n,:],self.y[n,:]
                 if self.z is None:

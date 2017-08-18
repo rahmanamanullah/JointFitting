@@ -1,5 +1,4 @@
-import os
-import sys
+import os, sys, warnings
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
@@ -119,6 +118,54 @@ class TestFitting(unittest.TestCase):
 		self.assertEqual(fl0.y_stddev.value,fl1.y_stddev.value)
 
 
+
+	def test_gaussian2Dfit_to_three_datasets_with_common_sigma_and_fixing_variables(self):
+		"""Joint 2D fitting with common and individual image dependent
+		parameters"""
+		nx,ny = 128,128
+		common_names = ['x_stddev','y_stddev','theta']		
+
+		# models (sigma are offset with 10% in x-direction)
+		x0,y0 = 40,40
+		x1,y1 = 100,100
+		x2,y2 = 40,80
+		g1 = models.Gaussian2D(amplitude=5.,x_mean=x0,y_mean=y0,x_stddev=5,y_stddev=5)
+		g2 = models.Gaussian2D(amplitude=3.,x_mean=x1,y_mean=y1,x_stddev=1.1*5,y_stddev=5)
+		g3 = models.Gaussian2D(amplitude=1.,x_mean=x2,y_mean=y2,x_stddev=5,y_stddev=1.1*5)
+
+		# generate data
+		y, x = np.mgrid[:nx, :ny]
+		z1,z2,z3 = x*0.0,x*0.0,x*0.0
+		z1 += g1(x,y)
+		z2 += g2(x,y)
+		z3 += g3(x,y)
+
+		xx = np.stack((x,x,x),axis=0)
+		yy = np.stack((y,y,y),axis=0)
+		zz = np.stack((z1,z2,z3),axis=0)
+
+		# indirectly test fixing of parameters
+		g1.theta.fixed = True       # this will fix theta for all
+		g3.amplitude.fixed = True	# fix amplitude
+
+		warnings.simplefilter('ignore')
+
+		# fitter
+		jf = fitting.JointMinuitFitter(verbose=False)
+		fitl = jf([g1,g2,g3],xx,yy,zz,maxiter=50000,common_names=common_names)
+
+		fl0,fl1,fl2 = fitl
+
+		self.assertAlmostEqual(fl0.x_mean.value,x0)
+		self.assertAlmostEqual(fl0.y_mean.value,y0)
+		self.assertAlmostEqual(fl1.x_mean.value,x1)
+		self.assertAlmostEqual(fl1.y_mean.value,y1)
+		self.assertAlmostEqual(fl2.x_mean.value,x2)
+		self.assertAlmostEqual(fl2.y_mean.value,y2)		
+		self.assertEqual(fl0.x_stddev.value,fl1.x_stddev.value)
+		self.assertEqual(fl0.y_stddev.value,fl1.y_stddev.value)
+		self.assertEqual(fl0.x_stddev.value,fl2.x_stddev.value)
+		self.assertEqual(fl0.y_stddev.value,fl2.y_stddev.value)
 	
 if __name__ == '__main__' :
 	unittest.main()
