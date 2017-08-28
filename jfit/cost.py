@@ -64,7 +64,7 @@ def _determine_nsets(x,z):
 
 
 def _all_param_names(nsets,param_names,common_names):
-    """Return a list with all the parameter names (e.g. [a_0,c_0,a_1,c_1,b], given the 
+    """Return a list with all the parameter names (e.g. [a_0,c_0,a_1,c_1,b_0], given the 
     number of data sets, the parameter names for the model (e.g. [a,b,c]) and a list
     of common parameter names (e.g. [b]).    
     """
@@ -79,7 +79,9 @@ def _all_param_names(nsets,param_names,common_names):
         for n in range(nsets):
             for name in indiv_names:
                 param_names_full.append("%s_%d"%(name,n))
-        param_names_full += common_names
+        # param_names_full += common_names
+        for name in common_names:
+            param_names_full.append("%s_0"%(name))
     return param_names_full
     
     
@@ -133,7 +135,7 @@ class JointCostFunctor(object):
         # determine the number of datasets
         nsets = _determine_nsets(y,z)
         self.nsets = nsets
-
+        
         # keep track of the parameters that are going to be jointly fitted
         ncommon = len(common_names)
         nparam  = len(param_names)
@@ -142,27 +144,24 @@ class JointCostFunctor(object):
         # to each individual data set
         indiv_names = _not_in_list(param_names,common_names)
         self.indiv_names = indiv_names
-
+        
         # the full parameter list will contain the individual list first and
-        # the common parameters in the end, e.g. a_1,c_1,a_2,c_2,b, but the
+        # the common parameters in the end, e.g. a_1,c_1,a_2,c_2,b_0, but the
         # calling sequence to the fitting model is typically (a,b,c)
         # therefore we need to setup an index vector that can be used to
         # sort the argument list in the correct order once it is pulled out
-        # so that in the example above (a_1,c_1,b) becomes (a_1,b,c_1)
+        # so that in the example above (a_1,c_1,b_0) becomes (a_1,b_0,c_1)
         self.index = []
-        i1,i2 = 0,len(indiv_names)
-        for n,name in enumerate(param_names):
-            if name in common_names:
-                self.index.append(i2)
-                i2 += 1
-            else:
-                self.index.append(i1)
-                i1 += 1
-        
+        for name in indiv_names:
+            self.index.append(param_names.index(name))
+        for name in common_names:
+            self.index.append(param_names.index(name))
+                              
+                
         # setup the full parameter list that *should be fitted* (i.e. no
         # fixed parameters), this will have the length: nsets*(nparam-ncommon) + ncommon
         param_names_full = _all_param_names(nsets,param_names,common_names)
-         
+                
         # setup the function signature
         self.func_code = make_func_code(param_names_full)
         self.func_defaults = None                       # this keeps np.vectorize happy
@@ -175,6 +174,9 @@ class JointCostFunctor(object):
         is the number of parameters of the model and 'ncommon' are the number of parameters 
         that will be jointly fitted.
         """
+        #print("CALL:",arg,len(arg))        
+        #print(len(self.indiv_names),len(arg)-len(self.indiv_names)*self.nsets)
+        
         nindiv = len(self.indiv_names)
         chisq = 0.
         for n in range(self.nsets):

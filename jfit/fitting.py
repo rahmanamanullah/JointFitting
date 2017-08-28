@@ -57,6 +57,8 @@ class JointMinuitFitter(object) :
                     continue
                 elif name not in common_names and nsets > 1:
                     pname = "%s_%d"%(name,n)
+                elif nsets > 1:
+                    pname = "%s_0"%(name)
                 else:
                     pname = name
                 kwargs[pname] = model_copy.parameters[model_copy.param_names.index(name)]  # Starting point.
@@ -114,6 +116,8 @@ class JointMinuitFitter(object) :
             for name in model_copy.param_names:
                 if nsets > 1 and name not in common_names:
                     pname = "%s_%d"%(name,n)
+                if nsets > 1:
+                    pname = "%s_0"%(name)
                 else:
                     pname = name
                 model_copy.parameters[model_copy.param_names.index(name)] = m.values[pname]
