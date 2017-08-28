@@ -114,12 +114,13 @@ class JointMinuitFitter(object) :
         for n in range(nsets):
             model_copy = modelc[n]
             for name in model_copy.param_names:
-                if nsets > 1 and name not in common_names:
+                if name not in common_names and nsets > 1:
                     pname = "%s_%d"%(name,n)
-                if nsets > 1:
+                elif nsets > 1:
                     pname = "%s_0"%(name)
                 else:
                     pname = name
+
                 model_copy.parameters[model_copy.param_names.index(name)] = m.values[pname]
                 
         if nsets == 1:

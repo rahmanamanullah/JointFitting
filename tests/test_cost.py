@@ -93,7 +93,7 @@ class TestCost(unittest.TestCase):
 		nsets = 2
 		param_names = ['a','b','c']
 		common_names = ['c']
-		expected_result = ['a_0','b_0','a_1','b_1','c']
+		expected_result = ['a_0','b_0','a_1','b_1','c_0']
 		result = cost._all_param_names(nsets,param_names,common_names)
 		return self.assertTrue(result==expected_result)
 
