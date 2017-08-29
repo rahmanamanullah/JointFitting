@@ -216,7 +216,20 @@ class ImageModel(Fittable2DModel):
             ms = a
 
         return ms
-            
+
+
+    def check_bounds(self):
+        """Verify that no parameter values are at their bounds.  This is a useful
+        check after the the model fit is complete."""
+        failed = []  # list of parameter names that are not within their bounds
+        for p in self.param_names:
+            v = self.get(p)
+            l,u = self.bounds[p]
+            if (l is not None and v <= l) or (u is not None and v >= u):
+                failed.append(p)
+
+        return failed            
+
         
     def _evaluate(self, x, y, *args):
         """The model evaluated at the coordinates (x,y) without oversampling 
