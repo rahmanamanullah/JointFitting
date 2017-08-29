@@ -156,7 +156,6 @@ class JointCostFunctor(object):
             self.index.append(param_names.index(name))
         for name in common_names:
             self.index.append(param_names.index(name))
-                              
                 
         # setup the full parameter list that *should be fitted* (i.e. no
         # fixed parameters), this will have the length: nsets*(nparam-ncommon) + ncommon
@@ -202,7 +201,7 @@ class JointCostFunctor(object):
                 targ  = arg[i:i+nindiv]
                 targ += arg[self.nsets*nindiv:]
                                 
-                # now the tuple must be reshuffled to match the call order
+                # targ must be reshuffled to match the call order
                 # for the model that we are trying to fit.
                 targ = list(targ)
                 targ = sorted(dict(zip(self.index,targ)).items(), key=lambda x: x[0])
