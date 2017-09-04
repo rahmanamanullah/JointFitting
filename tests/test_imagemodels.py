@@ -99,7 +99,6 @@ class TestImageModels(unittest.TestCase):
 		m.bounds['x_0'] = (0,2*hpw+1) # parameter svalue is within bounds
 		m.bounds['n'] = (2,4)         # parameter value is at lower limit
 		failed = m.check_bounds()
-		print failed
 		return self.assertTrue(len(failed)==1 and 'n' in failed)
 
 

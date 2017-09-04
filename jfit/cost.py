@@ -105,12 +105,21 @@ class JointCostFunctor(object):
         
         In the default execution all parameters of the model 'f' will be fit to each data 
         set indepedently.  In other words, this is identical to fit the model to each data
-        set, one at a time.
+        set, one at a time.  Here, 'f', can be either a single function, or a list of models
+        which allows minor differences in the models being fit to each data set (one
+        example could be to have different PSF models for 2D images).  Note however, that
+        all models are expected to take the same parameter names.
         
         However, if some parameters are passed as 'common_names' these will be jointly fit
         to all data series.
+
+        TODO: - Allow for different parameter names when a list of models is passed, but 
+                still allowing joint fits of common parameter names.
+              - Implement regularization.
         """
-        self.f  = f
+        if not _validate_shape(x,y,z,w):
+            return ValueError("All data and weight arrays must have the same shape!")
+
         self.x  = x
         self.y  = y
         self.z  = z
@@ -119,23 +128,28 @@ class JointCostFunctor(object):
         self.common_names = common_names
         self.verbose = verbose
 
-        if not _validate_shape(x,y,z,w):
-            return ValueError("All data and weight arrays must have the same shape!")
-        
-        # determine the parameter names if they have not been passed manually
-        # if 'f' itself is a function where the parameters are setup dynamically
-        # this is likely to fail...
-        if param_names is None:
-            f_sig = describe(f)
-            param_names = f_sig[1:]                     # docking off independent variable
-            if len(param_names) == 0:
-                raise ValueError("Failed to determine function signature, "
-                                 "try to pass it manually to the constructor.")
-                    
         # determine the number of datasets
         nsets = _determine_nsets(y,z)
         self.nsets = nsets
         
+        # the function can either be passed as a single function or a list of functions,
+        # which will be interpreted as one function for each dataset.
+        if isinstance(f,list):
+            self.f = f
+        else:
+            self.f = [f]*nsets
+
+        # determine the parameter names if they have not been passed manually
+        # if 'f' itself is a function where the parameters are setup dynamically
+        # this is likely to fail...
+        if param_names is None:
+            first_func = self.f[0]
+            f_sig = describe(first_func)
+            param_names = f_sig[1:]                     # docking off independent variable
+            if len(param_names) == 0:
+                raise ValueError("Failed to determine function signature, "
+                                 "try to pass it manually to the constructor.")
+
         # keep track of the parameters that are going to be jointly fitted
         ncommon = len(common_names)
         nparam  = len(param_names)
@@ -216,9 +230,9 @@ class JointCostFunctor(object):
                     w = self.w[n,:]
                     
             if self.z is None :
-                model_vals = self.f(x,*targ)
+                model_vals = self.f[n](x,*targ)
             else :
-                model_vals = self.f(x,y,*targ)            
+                model_vals = self.f[n](x,y,*targ)            
 
             if self.w is None :
                 chisq += np.sum((measured_vals - model_vals)**2)

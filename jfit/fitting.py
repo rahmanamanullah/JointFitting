@@ -44,12 +44,14 @@ class JointMinuitFitter(object) :
         kwargs = {}
         modelc = []
         vparam_names = []
+        modelf = []
         for n in range(nsets):
             if nsets == 1:
                 model_copy = _validate_model(model, self.supported_constraints)
             else:
                 model_copy = _validate_model(model[n], self.supported_constraints)
             modelc.append(model_copy)
+            modelf.append(model_copy.evaluate)
                 
             fixed,bounds = model_copy.fixed,model_copy.bounds
             for name in model_copy.param_names:
@@ -97,7 +99,7 @@ class JointMinuitFitter(object) :
 
         # setup the cost function, the parameter names passed here are the parameter
         # names for the invividual models.
-        costfnc = JointCostFunctor(model_copy.evaluate,x,y,z,weights,
+        costfnc = JointCostFunctor(modelf,x,y,z,weights,
                                    common_names=common_names,
                                    param_names=model_copy.param_names)
 
