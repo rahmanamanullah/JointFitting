@@ -86,7 +86,7 @@ class JointMinuitFitter(object) :
                 elif (b1 is None and b2 is not None) or (b1 is not None and b2 is None) :
                     raise ValueError('one-sided bounds not allowed for '
                                      'minuit minimizer')
-                kwargs['error_' + pname] = step
+                kwargs['error_' + pname] = abs(step)
                 
         if self.verbose:
             print("Initial parameters:")
