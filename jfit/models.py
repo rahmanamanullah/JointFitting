@@ -170,14 +170,19 @@ class ImageModel(Fittable2DModel):
         
         m = self._evaluate(xs,ys,*args)
 
+
         # the amplitude is normalized to the original sampling, and
-        # in order to conserve flux we need to scale with the square
-        # of the sampling factor
+        # in order to conserve flux we need to scale with sub pixel
+        # size
         shape = x.shape
         if len(shape) == 1:
-            m /= sample_factor
+            # size of each oversampled pixel in the original pixel scale
+            dx,dy = xs[1]-xs[0],ys[1]-ys[0]
+            m *= np.sqrt(dx*dx + dy*dy)
         elif len(shape) == 2:
-            m /= sample_factor*sample_factor
+            # size of each oversampled pixel in the original pixel scale
+            dx,dy = xs[0,1] - xs[0,0],ys[1,0] - ys[0,0]
+            m *= dx*dy
         else:
             raise ValueError("Dimensions of input arrays not supported!")
 
@@ -200,7 +205,8 @@ class ImageModel(Fittable2DModel):
 
         a = self._oversampled_model(x,y,sample_factor,*args)
 
-        # rebin model back to the original resolution
+        # rebin model back to the original resolution, by summing
+        # the flux that falls in each pixel
         shape = x.shape
         if sample_factor > 1:
             if len(shape) == 1:

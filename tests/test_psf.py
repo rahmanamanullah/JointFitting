@@ -41,6 +41,20 @@ def guassian_convolved_with_gaussian(nx,ny,amplitude=1.0,x0=None,y0=None,fwhmi=7
 
 
 class TestPSF(unittest.TestCase):
+	def test_gauss_normalization(self):
+		"""Test that the sum of a Gauss is close to 1."""
+		s = (11,15)
+		x0,y0 = 7,8
+		fwhm = 2
+		x,y = testimage.xy_data(s[0],s[1])
+
+		m = SymmetricGaussian2D(x_0=x0,y_0=y0,fwhm=fwhm)
+		m.oversample_factor(20)
+		z1 = m(x,y).sum()
+
+		return self.assertAlmostEqual(z1,1.,places=1)
+
+
 	def test_oversampling_gauss_flux_conservation(self):
 		"""Make sure that the flux is conserved after the oversampled model has been 
 		rebinned to the original size"""
@@ -58,22 +72,61 @@ class TestPSF(unittest.TestCase):
 		return self.assertAlmostEqual(np.sum(z1),np.sum(z2))
 
 
-	def test_oversampling_moffat_flux_conservation(self):
+
+	def test_oversampling_gauss_flux_conservation2D(self):
+		"""Test that the flux is conserved between a wide for different oversampling
+		factors"""
+		s = (11,15)
+		x0,y0 = 7,8
+		fwhm = 2
+		x,y = testimage.xy_data(s[0],s[1])
+
+		m = SymmetricGaussian2D(x_0=x0,y_0=y0,fwhm=fwhm)
+		m.oversample_factor(3)
+		z1 = m(x,y).sum()
+
+		m.oversample_factor(21)
+		z2 = m(x,y).sum()
+
+		return self.assertAlmostEqual(z1,z2,places=2)
+
+
+	def test_oversampling_gauss_flux_conservation1D(self):
 		"""Make sure that the flux is conserved after the oversampled model has been 
-		rebinned to the original size"""
+		rebinned to the original size using only 1D input arrays"""
 		s = (5,7)
 		x0,y0 = 3,4
-		amplitude = 100.
-		fwhm = 1
-		alpha = 2.
-		factor = 5
-		x,y = testimage.xy_data(s[0],s[1])
-		m = SymmetricMoffat2D()
-		m.oversample_factor(factor)
-		z1 = m._oversampled_model(x,y,factor,amplitude,x0,y0,fwhm,alpha)
-		z2 = m.evaluate(x,y,amplitude,x0,y0,fwhm,alpha)
+		fwhm = 2
 
-		return self.assertAlmostEqual(np.sum(z1),np.sum(z2))
+		x = np.linspace(0,4,10)
+		y = np.zeros(len(x)) + y0
+
+		m = SymmetricGaussian2D(amplitude=1.,x_0=x0,y_0=y0,fwhm=fwhm)
+		m.oversample_factor(5)
+		z1 = m(x,y).sum()
+
+		m.oversample_factor(50)
+		z2 = m(x,y).sum()
+
+		return self.assertAlmostEqual(z1,z2,places=2)
+
+
+	def test_oversampling_moffat_flux_conservation2D(self):
+		"""Most of the tests above test the underlying functionality of the models and 
+		PSF classes.  It is therefore sufficient to test flux conservation for Moffat2D"""
+		s = (31,29)
+		x0,y0 = 15,15
+		fwhm = 2.
+		alpha = 4.
+		x,y = testimage.xy_data(s[0],s[1])
+		m = SymmetricMoffat2D(amplitude=1.,x_0=x0,y_0=y0,fwhm=fwhm,alpha=alpha)
+		m.oversample_factor(5)
+		z1 = m(x,y).sum()
+
+		m.oversample_factor(50)
+		z2 = m(x,y).sum()
+
+		return self.assertAlmostEqual(z1,z2,places=3)
 
 
 	def test_oversampled_gauss_kernel_dimensions(self):

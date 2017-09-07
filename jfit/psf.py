@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.modeling import Parameter
 from models import ImageModel
+from scipy.interpolate import interp1d
 
 __all__ = ['SymmetricGaussian2D','SymmetricMoffat2D']
 
@@ -10,6 +11,43 @@ class PSF(ImageModel):
     
     http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/PSFsAndSampling.pdf
     """
+    def ee(self,radius,sample_factor=10):
+        """
+        Method for calculate the encircled energy (between 0 and 1) for the radius 1.
+        """
+        # if there is an analytic solution this should be overridden in the classes
+        # deriving from PSF()
+        rr = np.asarray(radius).flatten()
+
+        # extend radius array with +/- 0.5 pixel
+        rr = np.sort( np.append(rr,[rr.min()-0.5,rr.max()+0.5]) )
+
+        # setup pixel coordinate grid
+        hpw = int(np.ceil(rr.max())) + 1
+        nelem = 2*hpw+1
+        y,x = np.mgrid[:nelem, :nelem]
+
+        # over sampled pixel coordinates
+        xs,ys = self._oversample_input(x,y,sample_factor)
+        rs = np.sqrt((xs-hpw)**2 + (ys-hpw)**2)
+
+        # evaluate and normalize the PSF
+        p = self._evaluate(xs,ys,1.,hpw,hpw,*self.parameters[3:])
+        dx,dy = xs[0,1] - xs[0,0],ys[1,0] - ys[0,0]        
+        p *= dx*dy
+
+        # calculate encircled energy for all given radii
+        e = []
+        for r in rr:
+            m = rs <= r
+            e.append(p[m].sum())
+
+        # setup interpolation object
+        ee = interp1d(rr,np.array(e),kind='linear')
+
+        return ee(np.asarray(radius))
+
+
 
     def kernel(self,khpw,sample_factor=1):
         """
