@@ -162,28 +162,39 @@ class ImageModel(Fittable2DModel):
         if sample_factor is None :
             sample_factor = self._sample_factor
         
+        # should the model be subsampled
+        oversample = sample_factor > 1 and (len(x) > 1 or len(y) > 1)
+        
         # over sample the input vectors
-        if sample_factor > 1:
+        if oversample:
             xs,ys = self._oversample_input(x,y,sample_factor)
         else :
             xs,ys = x,y
         
         m = self._evaluate(xs,ys,*args)
 
-
-        # the amplitude is normalized to the original sampling, and
         # in order to conserve flux we need to scale with sub pixel
-        # size
+        # size ***this is assuming equidistant input arrays***
         shape = x.shape
-        if len(shape) == 1:
+        if len(shape) == 1 and oversample:
             # size of each oversampled pixel in the original pixel scale
-            dx,dy = xs[1]-xs[0],ys[1]-ys[0]
+            dx = (xs[1]-xs[0])
+            ddx = x[1]-x[0]
+            if ddx > 0: dx /= ddx
+            dy = (ys[1]-ys[0])
+            ddy = y[1]-y[0]
+            if ddy > 0: dy /= ddy
             m *= np.sqrt(dx*dx + dy*dy)
-        elif len(shape) == 2:
+        elif len(shape) == 2 and oversample:
             # size of each oversampled pixel in the original pixel scale
-            dx,dy = xs[0,1] - xs[0,0],ys[1,0] - ys[0,0]
+            dx = (xs[0,1]-xs[0,0])
+            ddx = x[0,1]-x[0,0]
+            if ddx > 0.: dx /= ddx
+            dy = (ys[1,0]-ys[0,0])
+            ddy = y[1,0]-y[0,0]
+            if ddy > 0.: dy /= ddy
             m *= dx*dy
-        else:
+        elif oversample:
             raise ValueError("Dimensions of input arrays not supported!")
 
         return m
@@ -205,10 +216,12 @@ class ImageModel(Fittable2DModel):
 
         a = self._oversampled_model(x,y,sample_factor,*args)
 
+        oversample = sample_factor > 1 and (len(x) > 1 or len(y) > 1)
+
         # rebin model back to the original resolution, by summing
         # the flux that falls in each pixel
         shape = x.shape
-        if sample_factor > 1:
+        if oversample:
             if len(shape) == 1:
                 sh = shape[0],a.shape[0]//shape[0]
                 ms = a.reshape(sh).sum(-1)
