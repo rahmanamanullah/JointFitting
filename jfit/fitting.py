@@ -12,8 +12,9 @@ A general class for fitting joint fitting
 class JointMinuitFitter(object) :
     supported_constraints = ['bounds', 'fixed']
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, debug=False):
         self.verbose = verbose
+        self.debug   = debug
         self.minuit = None
         self.m = self.minuit
 
@@ -88,7 +89,7 @@ class JointMinuitFitter(object) :
                                      'minuit minimizer')
                 kwargs['error_' + pname] = abs(step)
                 
-        if self.verbose:
+        if self.debug:
             print("Initial parameters:")
             for name in vparam_names:
                 print(name, kwargs[name], 'step=', kwargs['error_' + name],
